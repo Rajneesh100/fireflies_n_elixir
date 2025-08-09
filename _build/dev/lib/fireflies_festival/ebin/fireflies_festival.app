@@ -1,0 +1,12 @@
+{application,fireflies_festival,
+             [{optional_applications,[]},
+              {applications,[kernel,stdlib,elixir,logger]},
+              {description,"fireflies_festival"},
+              {modules,['Elixir.Broadcast','Elixir.ClockManager',
+                        'Elixir.Config','Elixir.Display',
+                        'Elixir.FirefliesFestival','Elixir.Firefly',
+                        'Elixir.Listener','Elixir.SkipWaitTriggered',
+                        'Elixir.StanderdConfig','Elixir.StateUpdater']},
+              {registered,[]},
+              {vsn,"0.1.0"},
+              {mod,{'Elixir.FirefliesFestival',[]}}]}.

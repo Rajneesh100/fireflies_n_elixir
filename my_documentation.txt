@@ -1,0 +1,410 @@
+
+some commands 
+
+to run any code 
+: elixir name.exs
+
+
+
+to build a new project 
+: mix new my_project
+
+
+compile 
+: mix compile
+
+
+intract with elixir env, this loads all the project mothods
+and we can intract 
+: iex -S mix
+
+
+Now we can access any methods like 
+: Fireflies.hello
+
+
+
+in normal system shell
+mix run -e "Fireflies.hello"
+
+
+in intractive elixir session we get the return values but nomal file syatem directory run it doesn't shows return value but only print value
+
+
+
+
+
+In Elixir, the last expression in a function becomes the return value. Here, the last expression is:
+
+here if print statement is at the last then
+IO.puts("hello okey")
+IO.puts/1 returns :ok, so hello/0 will always return :ok — not :hello_okey.
+
+
+
+ with "mix run" it only prints while first time compiling, elixir is compile time language but (also gives feature of intractive envirnoment), 
+
+ in "mix run" any code is run during compile time so if there is nothing new to compile code won't run
+
+
+
+
+Key analogy
+ Compile-time: Like checking all your train tracks before the train moves — you can’t start the trip until they’re perfect.
+
+ Runtime: Like checking and laying tracks as the train moves — you can start right away, but may crash if a track is missing ahead.
+
+ 💡 Elixir note:
+ Elixir compiles to BEAM bytecode (like a compile-time language), but you can run it interactively (like a runtime language). So it’s not purely one or the other — many modern languages mix both.
+
+
+
+
+Supervisor.start_link([], strategy: :one_for_one)
+> superviser is a process which oversees a child process currently we have none so [] list and one_for_one means superviser can restart  process for that one crashed process. 
+
+let it crash alone
+
+
+## hex is it's package manager
+get the dependency from hex webpage put that into deps
+and then run 
+: mix deps.get
+
+
+atoms are like constant here for and it's better than the string
+bcz when we use atom it gets allocated a memory and in case of euality 
+checking of two atoms we just need to check that it's address is same or not
+but in case of strings we have to go char by char every time.
+
+putting a colon :  make string values atom like 
+
+:"hellow world"    use quotes for space sapreated values
+:hello             for single words no need for quotes
+
+
+=== check value & types 
+== checks value only like int and double have same vlaue 
+
+
+elixer is a dynamically typed language
+like first we can assign int value and in next step we can add some floating point value like
+a = 5
+a = a + 4.5
+
+
+example syn tax
+
+certain numbers in binary can't be represented properly
+
+like 0.1 => 
+like 1/3 in decimal system
+
+:io.format("~.20f\n",[0.1])
+this is a print method and each print return ok if sucessful and in elixir last word is return value of method
+
+new!  => this means it can throw error but trust the user it has passed correct input
+
+
+
+
+for something like global veriable: 
+ETS = Erlang Term Storage 
+for high concurrent reads and writes with mutiple proccess.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+directly intracting with process.
+```
+  def start_cart do
+    spawn(fn -> listen([]) end)
+  end
+
+  def listen(cart) do
+    receive do
+      {:add_item, item_name} ->
+        new_cart = [item_name | cart]
+        IO.puts("Item added to cart: #{item_name}")
+        listen(new_cart)
+      :show ->
+        IO.puts("Items in cart: #{inspect(cart)}")
+        listen(cart)
+      {:remove, remove_item} ->
+        if remove_item in cart do
+          new_cart = List.delete(cart, remove_item)
+          IO.puts("#{remove_item} removed from the cart")
+          listen(new_cart)
+        else
+          IO.puts("#{remove_item} not present in cart")
+          listen(cart)
+        end
+
+
+    end
+  end
+
+```
+
+
+intractive session
+iex -S mix 
+
+pid = Learning.strat_cart
+send(pid, {:add_item, "apple"})
+send(pid, {:add_item, "apple"})
+
+
+iex(16)> send(pid, :show)
+Items in cart: ["chilly", "plum", "banana", "apple"]
+:show
+iex(17)> 
+
+
+iex(22)> send(pid, {:remove, "chilly"})
+chilly removed from the cart
+{:remove, "chilly"}
+iex(23)> send(pid, :show)
+Items in cart: ["plum", "banana", "apple"]
+:show
+iex(24)> 
+
+
+iex(24)> send(pid, {:remove, "mango"})
+mango not present in cart
+{:remove, "mango"}
+iex(25)> send(pid, :show)
+Items in cart: ["plum", "banana", "apple"]
+:show
+iex(26)> 
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+anything which is not propely captures lies under :messages
+
+
+iex(19)> send(pid, :messages)
+:messages
+iex(20)> Process.info(pid, :messages)
+{:messages, [{:show, "chilly"}, {:remove_item, "chilly"}, :messages]}
+iex(21)> 
+
+
+iex(12)> Process.info(self(), :messages)
+{:messages, []}
+iex(13)> send(self(), {:text, "hi therer"})
+{:text, "hi therer"}
+iex(14)> Process.info(self(), :messages)
+{:messages, [text: "hi therer"]}
+iex(15)> 
+
+
+
+---------------------------------------------
+
+-- vesion 1
+
+defmodule Firefly do
+  defstruct [:id, :clock, :state, :soft, :sont, :sdt, :num, :pid, :ut]
+end
+
+defmodule Config do
+  defstruct [:tf, :num, :ont, :oft, :dt, :pf]
+end
+
+defmodule StanderdConfig do
+  defstruct [:ut, :num, :sont, :soft, :sdt, :pf]
+end
+
+defmodule FirefliesFestival do
+  use Application
+
+
+  def start(_type, _args) do
+    FirefliesFestival.main()
+    Supervisor.start_link([], strategy: :one_for_one)
+  end
+
+
+
+
+  def getStanderdConfig(%Config{} = config) do
+    # unit time in ms for one clock tick 1000/freq
+    ut = truncate (1000 / config.tf)
+    %StanderdConfig{
+      ut: ut,
+      num: config.num,
+      sont: truncate(config.ont*1000 / ut),
+      soft: truncate(config.oft*1000 / ut),
+      sdt: truncate(config.dt*1000 / ut),
+      pf: config.pf
+    }
+  end
+
+
+
+  defp truncate(x), do: Float.ceil(x) |> trunc()
+
+
+
+  def main do
+
+    config = %Config{tf: 10, num: 50, ont: 0.5, oft: 2, dt: 1, pf: 30}
+    sc = getStanderdConfig(config)
+
+
+    # common shared mem for storing state of fireflies
+    :ets.new(:fireflies_state, [:named_table, :public, :set])
+
+    #  table to store firefly PIDs
+    :ets.new(:fireflies_pids, [:named_table, :public, :set])
+
+    for id <- 1..sc.num do
+      :ets.insert(:fireflies_state, {id, 0})
+    end
+
+    max_random_time = config.tf * 2   #initial clock time in terms of ut [ 0 to 2*tick_freq ]
+
+    # creating one process per firefly
+    fireflies =
+      for id <- 1..sc.num do
+        pid = spawn_link(fn ->
+          run_firefly(%Firefly{
+            id: id,
+            clock: :rand.uniform(max_random_time), # random float values
+            state: 0,
+            soft: sc.soft,
+            sont: sc.sont,
+            sdt: sc.sdt,
+            num: sc.num,
+            pid: self(),
+            ut: sc.ut
+          })
+        end)
+        {id, pid}  # returned for each itration to be stored in fireflies
+      end
+
+    # all pids for in common access for broadcasting
+    Enum.each(fireflies, fn {id, pid} ->
+      :ets.insert(:fireflies_pids, {id, pid})
+    end)
+
+    IO.inspect(fireflies, limit: :infinity)
+    spawn_link(fn -> show_fireflies(sc.pf) end)
+
+  end
+
+
+  defp run_firefly(%Firefly{} = f) do
+    clock_pid = spawn_link(fn -> manage_clock(f) end)
+    listner_pid = spawn_link(fn ->listen_to_fireflies(f) end)
+  end
+
+  # # Older method
+  # defp run_firefly(%Firefly{} = f) do
+  #   receive do
+  #     {:on_state, from_id} ->
+  #       if f.state == 0 and skip_wait_triggered?(f.id, from_id, f.num) do
+  #         f = update_state(%{f | clock: min(f.clock + f.sdt, f.soft )})  # update state if needed
+  #         run_firefly(f)
+  #       else
+  #         run_firefly(f)
+  #       end
+
+  #   # after one tick time,
+  #   after
+  #     f.ut ->
+  #       f = tick(f)          # clock++
+  #       f = update_state(f)  # flip the state if needed
+  #       run_firefly(f)       # keep running
+  #   end
+  # end
+
+
+  defp listen_to_fireflies(%Firefly{} =f) do
+    receive do
+      {:on_state, from_id} ->
+        if f.state == 0 and skip_wait_triggered?(f.id, from_id, f.num) do
+          :timer.sleep(2) # 2ms, to avoid racing condition on updating clock when some pings comes in and normal incremnet is also going on
+          f = update_state(%{f | clock: min(f.clock + f.sdt, f.soft )})  # update state if needed
+          listen_to_fireflies(f)
+        else
+          listen_to_fireflies(f)
+        end
+    end
+  end
+
+  defp manage_clock(%Firefly{} =f) do
+    :timer.sleep(trunc(f.ut))
+    f = tick(f)          # clock++
+    f = update_state(f)  # flip the state if needed
+    manage_clock(f)      # keep running
+  end
+
+
+
+  # 0 -> 1 using runtime polymorphism for state change
+  defp update_state(%Firefly{state: 0, clock: c, soft: soft} = f) when c >= soft do
+    broadcast(f.id)
+    :ets.insert(:fireflies_state, {f.id, 1})
+    %{f | state: 1, clock: 0}
+  end
+
+  #  1 -> 0
+  defp update_state(%Firefly{state: 1, clock: c, sont: sont} = f) when c >= sont do
+    :ets.insert(:fireflies_state, {f.id, 0})
+    %{f | state: 0, clock: 0}
+  end
+
+  # when no switch required
+  defp update_state(f) do
+    f
+  end
+
+
+  # increment clock
+  defp tick(f), do: %{f | clock: f.clock + 1}
+
+
+
+  # when switching to on state at clock =0 send to other processes
+  defp broadcast(id) do
+
+    # ping to all fireflies
+    :ets.tab2list(:fireflies_pids)
+    |> Enum.each(fn {_firefly_id, pid} ->
+      if pid != self() do
+         send(pid, {:on_state, id})
+      end
+    end)
+  end
+
+
+
+  # can be any logic currently if left neighbour has pinged then some dt wait time can be skipped
+  defp skip_wait_triggered?(id, from_id, num) do
+    from_id == id - 1 or (id == 1 and from_id == num)
+  end
+
+
+
+  defp show_fireflies(pf) do
+    :timer.sleep(div(1000, pf))
+    IO.write(IO.ANSI.clear() <> IO.ANSI.home())
+
+    line =
+      for id <- 1..:ets.info(:fireflies_state)[:size] do
+        case :ets.lookup(:fireflies_state, id) do
+          [{^id, 1}] -> "B"
+          _ -> " "
+        end
+      end
+
+    IO.puts(Enum.join(line))
+    show_fireflies(pf)
+
+  end
+
+
+end
