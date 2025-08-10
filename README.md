@@ -115,9 +115,11 @@ tick    jump             tick                  tick    tick
 
 sapreated the clock_update and skip_wait logic as a indepenent flow and clock_update will get precedence 
 to maintain time slip by different clocks now all of the regular clocks will tick at the same time
+
+implimented shared memory space for state and clock access using ets.
 -----------------------------------------------------------------------------------------------------------------------------
 
-# how i have used ai 
+# how i have used llms
 first of all i have used it llms for understanding the use case of elixir like why it was created in first place, and then thaught about solution and from my background with backend development i thaught it like for each firefly what thing i needs there were :
 1) a internal counter
 2) a listner (something like message queues but on inter process level)
@@ -127,7 +129,7 @@ first of all i have used it llms for understanding the use case of elixir like w
 so i explored about how start learning about implimenting listner and braodcaster logic i found one yt video with help of gpt in which i got to know about inter process communication it was in context parallel cart management service where through elixir we can manage thousand of concurrent processes (link: https://www.youtube.com/watch?v=J2F9z_0XFj4) i watched few other short videos around it, to get together with syntax i went to gpt like instaed of send messages directly manually through elixir intractive session how to do it in code level. few times i used gpt to understand the sytax meaning like what does this one_on_one  ```Supervisor.start_link([], strategy: :one_for_one)``` means here (start the crashed process only , let it fail alone concept instead of affecting entire syatem, contain the failure).
 so yeah i used llms for syntax understanding and exploring logic behind certain things.
 
-
+-------------------------------------------------------------------------------------------------------------------------------
 
  
 to execute the fireflies
