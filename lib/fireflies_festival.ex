@@ -35,15 +35,18 @@ defmodule FirefliesFestival do
 
   def main do
 
-    config = %Config{tf: 10, num: 50, ont: 0.5, oft: 1, dt: 1, pf: 30}
+    config = %Config{tf: 10, num: 50, ont: 0.5, oft: 1, dt: 0.5, pf: 30}
     sc = getStanderdConfig(config)
 
 
     # common shared mem for storing state of fireflies
     :ets.new(:fireflies_state, [:named_table, :public, :set])
 
-    #  table to store firefly PIDs
+    #  table to store firefly listner pids
     :ets.new(:fireflies_pids, [:named_table, :public, :set])
+
+    # common mem for accessing the clock for clock manager and listner
+    :ets.new(:fireflies_clock, [:named_table, :public, :set])
 
     for id <- 1..sc.num do
       :ets.insert(:fireflies_state, {id, 0})
@@ -54,11 +57,11 @@ defmodule FirefliesFestival do
     # creating one process per firefly
     fireflies =
       for id <- 1..sc.num do
-        pid = spawn_link(fn ->
+        initial_clock = :rand.uniform(max_random_time) # random float values
+        :ets.insert(:fireflies_clock, {id, initial_clock})
+        spawn_link(fn ->
           run_firefly(%Firefly{
             id: id,
-            clock: :rand.uniform(max_random_time), # random float values
-            state: 0,
             soft: sc.soft,
             sont: sc.sont,
             sdt: sc.sdt,
@@ -67,13 +70,7 @@ defmodule FirefliesFestival do
             ut: sc.ut
           })
         end)
-        {id, pid}  # returned for each itration to be stored in fireflies
       end
-
-    # all pids for common mem access for broadcasting
-    Enum.each(fireflies, fn {id, pid} ->
-      :ets.insert(:fireflies_pids, {id, pid})
-    end)
 
     IO.inspect(fireflies, limit: :infinity)
     spawn_link(fn -> show_fireflies(sc.pf) end)
@@ -83,7 +80,8 @@ defmodule FirefliesFestival do
 
   defp run_firefly(%Firefly{} = f) do
     spawn_link(fn -> manage_clock(f) end)
-    spawn_link(fn ->listen_to_fireflies(f) end)
+    listener_pid = spawn_link(fn ->listen_to_fireflies(f) end)
+    :ets.insert(:fireflies_pids, {f.id, listener_pid})
   end
 
 

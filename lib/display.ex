@@ -3,7 +3,7 @@ defmodule Display do
     :timer.sleep(div(1000, pf))
     IO.write(IO.ANSI.clear() <> IO.ANSI.home())
 
-    line =
+    line_state =
       for id <- 1..:ets.info(:fireflies_state)[:size] do
         case :ets.lookup(:fireflies_state, id) do
           [{^id, 1}] -> "B"
@@ -11,7 +11,15 @@ defmodule Display do
         end
       end
 
-    IO.puts(Enum.join(line))
+    line_clock =
+      for id <- 1..:ets.info(:fireflies_clock)[:size] do
+        case :ets.lookup(:fireflies_clock, id) do
+          [{^id, clock}] -> "#{clock}"
+        end
+      end
+
+    IO.puts(Enum.join(line_clock))
+    IO.puts(Enum.join(line_state))
     show_fireflies(pf)
 
   end
