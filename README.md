@@ -1,32 +1,37 @@
 # solution idea
 
 preparing all veriable as configurations 
-tf  : tick frequency , no of times fireflies clocks tick per second so 1/tf is precision of system.
-n   : input parameter, number of fireflies, we have to create n processes representing n fireflies.
-pf  : print frequency, print all fireflies in a line pf/second and before printing the line clear the previous line so at a time only one line is visible on screen
+1) tf  : tick frequency , no of times fireflies clocks tick per second so 1/tf is precision of system.
+2) n   : input parameter, number of fireflies, we have to create n processes representing n fireflies.
+3) pf  : print frequency, print all fireflies in a line pf/second and before printing the line clear the previous line so at a time only one line is visible on screen
+
   -- below time values are expected in seconds unit --
-oft : off time for which fireflies will be in off start after which they will switch state and trun on
-ont : on time for which fireflies will in on state after which they will switch state to turn off
-dt  : delta time max skip wait time , which fireflies can skip like if fireflies needs to wait for w time to swich on and they get a on ping from left side then they can skip wait for min(w, dt) which will cause them to switch on little earlier
+4) oft : off time for which fireflies will be in off start after which they will switch state and trun on
+5) ont : on time for which fireflies will in on state after which they will switch state to turn off
+6) dt  : delta time max skip wait time , which fireflies can skip like if fireflies needs to wait for w time to swich on and they get a on ping from left side then they can skip wait for min(w, dt) which will cause them to switch on little earlier
 
 
 refrance conversion:
-here i want to deal with standerd integer values for time 
+
+here i wanted to deal with standerd integer values for time 
 so first of all calculating the precision from tf since clocks tick tf time per second 
 
 Assumption : considering miliseond precision
 
+```
 unit time ut = 1000/tf  (smallest time quantum of system in ms)
 
-now convert each time values oft, ont, dt  to ut refrance basically since ut is minimum measurable time so all time will measured in system will be mutiple of ut
+now converted each time values oft, ont, dt  to ut refrance basically since ut is minimum measurable time so all time will measured in system will be mutiple of ut
 so standerd oft, ont and dt will be as follows:
+
 soft =  1000*oft / ut
 sont =  1000*ont / ut
 sdt  =  1000*dt / ut
 
+```
 
 for n fireflies we will spawn n process each process will have following things:
-
+```
     id         : int value starting from 1 to n
     clock      : it's basically a counter which increments value by 1 after each ut interval
     state      : 0 or 1  (zero means off 1 means on)
@@ -39,9 +44,10 @@ for n fireflies we will spawn n process each process will have following things:
     sdt 
     ut
     pid
-
+```
 
 intial condition :
+```
 intially all firefly is on off state 
 and each firefly's clock is set to some random float value from [0 to 2*tf ]   (between 0 to 2 sec)
 
@@ -50,39 +56,52 @@ clock: :rand.uniform(max_random_time),
 
 for int :
 trunc(:rand.uniform(max_random_time)),
-
+```
 
 
 each process have clock, in intial state values might contain decimal fractions but after first sync it will natural number always
 
 update_state : 
-when in off state and clock >= soft  it chnages the state to on and clock resets to 0 and when it changes state at t=0 it broadcasts it's id {:on_state, self.id} to every one
+```
+when in off state and clock >= soft  it chnages the state to on and clock resets to 0 and when it changes state at t=0 it broadcasts it's id {:on_state, self.id} to every one.
+
 when in on state  and clock >= sont  it changes the state to off state and clock resets to 0
+```
 
-
-update_clock logic : 
+skip wait time logic : 
+```
 if state  == 0  # off state
   when recieves any broadcasts {:on_state , firefly_id}  if left_neighbour then add +sdt in clock 
 if state  == 1
   do nothing
+```
 
-
-tick: 
+clock_manager : 
+```
   just add one to clock
+```
 
 
 broadcast:
+```
   use ets memory to get all fireflies pid and ping them
+```
 
-run_firefly
+run_firefly:
+```
+created two flows :
   listner : 
-    actively keeps listing and checks for skip wait time condition be be met and increase it's clock
+    actively keeps listning and checks for skip wait time condition be be met and increase it's clock by +sdt. we collect all pids of each listner that were created when fireflies were created we will used this pids to send pings on state chnage
+
   manager_clock :
     after regular intervals increment the clock by 1 unit
 
 on each clock ticks & skip_wait event state chnage logic is checked and state is updated and clocks are set to zero.
 if new state is on state
-just after state change execution at clock = 0  broadcasts will be done to all other fireflies
+just after state change execution at clock = 0  broadcasts will be done to all other fireflies and listner will cature and check if it's his left neighbour or not and modify clock time accordingly
+
+```
+
 
 
 
@@ -102,8 +121,10 @@ well and good
 
 now consider this :
 let's say value of clock just changes to 2 and from it's left neighbour a ping came after 2 ms of so it adds 
-let's say 3 unit of time so now it's at 6 unit but since he already spend 2 ms in current wait so he needed to wait 98 ms to complete the normal cycle but now he will go to next cycle which is not in perfect 100ms slot are you getting me ?
+let's say 3 unit of time so now it's at 5 unit but since he already spend 2 ms in current wait so he needed to wait 98 ms to complete the normal cycle but now he will go to next cycle which is not in perfect 100ms slot so that 2ms wait wait was not counted properly.
+so implimented global shared clock for each firefly using ets storage and clock_update and listen was independently update clocks without lossing any time, to avoid race condition during clockupdate at new click by clock_manager and listner process, i have simply added 1ms wait time on listner which avoid race issue with normal clock_update, could have done somthing like mutex & semaphore to avoid this critical section problem but wanted to keep it simple and the current heck will have no consequences in terms of correctness.
 
+```
 normal :
 200ms                                          300ms   400ms   500ms   600ms
 tick                                           tick    tick    tick    tick
@@ -111,7 +132,7 @@ tick                                           tick    tick    tick    tick
 when ping :
 200ms   202ms (ping)     502ms  -98ms later->  600ms  700ms ......
 tick    jump             tick                  tick    tick
-
+```
 
 sapreated the clock_update and skip_wait logic as a indepenent flow and clock_update will get precedence 
 to maintain time slip by different clocks now all of the regular clocks will tick at the same time
@@ -154,8 +175,3 @@ to start the simulation run
 pid = FirefliesFestival.main()
 
 ```
-
-afart from letting it run on it self we can also send pings to specific fire flies to validate the early wake logic
-
-firefly_pid : pid of firefly which 
-send(firefly_pid, {:on_state, self_id})
