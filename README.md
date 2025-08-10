@@ -1,4 +1,3 @@
-Got it, here’s your text with only the spelling and grammar mistakes corrected, nothing else changed in meaning or structure:
 
 ---
 
@@ -11,7 +10,7 @@ preparing all variables as configurations
 3. pf  : print frequency, print all fireflies in a line pf/second and before printing the line clear the previous line so at a time only one line is visible on screen
 
       -- below time values are expected in seconds unit --
-      
+
 4. oft : off time for which fireflies will be in off state after which they will switch state and turn on
 5. ont : on time for which fireflies will be in on state after which they will switch state to turn off
 6. dt  : delta time max skip wait time, which fireflies can skip, like if a firefly needs to wait for w time to switch on and they get an on ping from the left side, then they can skip wait for min(w, dt) which will cause them to switch on a little earlier
@@ -180,3 +179,4 @@ after starting the session, to start the simulation run:
 # store the pid of parent process
 pid = FirefliesFestival.main()
 ```
+---
