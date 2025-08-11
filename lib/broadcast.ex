@@ -1,12 +1,18 @@
 defmodule Broadcast do
   # when switching to on state at clock =0 send to other processes
-  def broadcast(id) do
-    :timer.sleep(1)  # 1ms, to avoid racing condition on updating clock when some pings comes in and normal incremnet is also going on
-    :ets.tab2list(:fireflies_pids)  # ping to all fireflies
-    |> Enum.each(fn {_firefly_id, pid} ->
+  def send_on_state_to_fireflies(id) do
+    for pid <- :pg.get_members(:firefly_on_state_ping_topic) do
       if pid != self() do
-         send(pid, {:on_state, id})
+        send(pid, {:on_state,  id})
       end
-    end)
+    end
+  end
+
+  def ask_fireflies_state do
+    for pid <- :pg.get_members(:printer_get_fireflies_state_topic) do
+      if pid != self() do
+        send(pid, {:get_state})
+      end
+    end
   end
 end

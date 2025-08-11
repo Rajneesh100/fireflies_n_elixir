@@ -180,3 +180,15 @@ after starting the session, to start the simulation run:
 pid = FirefliesFestival.main()
 ```
 ---
+
+
+to run code in git code space
+```
+sudo apt-get update
+sudo apt-get install -y curl wget gnupg
+
+sudo apt-get install -y elixir erlang
+
+elixir -v
+
+```

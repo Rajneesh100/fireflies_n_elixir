@@ -2,24 +2,19 @@ defmodule StateUpdater do
   import Broadcast
 
   def update_state(%Firefly{} = f) do
-    [{_, current_state}] = :ets.lookup(:fireflies_state, f.id)
-    [{_, current_clock}] = :ets.lookup(:fireflies_clock, f.id)
-
     cond do
-      # 0 -> 1 
-      current_state == 0 and current_clock >= f.soft ->
-        broadcast(f.id)
-        :ets.insert(:fireflies_state, {f.id, 1})  # updating state & clock
-        :ets.insert(:fireflies_clock, {f.id, 0})
+      # 0 -> 1
+      f.state == 0 and f.clock >= f.soft ->
+        send_on_state_to_fireflies(f.id)
+        %{f | clock: 0, state: 1}
 
       #  1 -> 0
-      current_state == 1 and current_clock >= f.sont ->
-        :ets.insert(:fireflies_state, {f.id, 0})  # updating state & clock
-        :ets.insert(:fireflies_clock, {f.id, 0})
+      f.state == 1 and f.clock >= f.sont ->
+        %{f | clock: 0, state: 0}
 
-      # when no switch required
+      # no switch required
       true ->
-        :ok
+        f
     end
   end
 end

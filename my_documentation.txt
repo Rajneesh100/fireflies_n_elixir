@@ -201,6 +201,14 @@ iex(15)>
 
 
 
+
+pub-sub architecture:
+
+:pg.join(topic, pid)	        Add a process to a topic.
+:pg.leave(topic, pid)	        Remove a process from a topic.
+:pg.get_members(topic)	      Get all PIDs in a topic.
+:pg.get_local_members(topic)	Get only local node PIDs in a topic.
+
 ---------------------------------------------
 
 -- vesion 1
@@ -408,3 +416,5 @@ defmodule FirefliesFestival do
 
 
 end
+
+
