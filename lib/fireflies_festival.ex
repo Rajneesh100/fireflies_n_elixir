@@ -6,8 +6,9 @@ defmodule FirefliesFestival do
   import StanderdConfig
   import SkipWaitTriggered
   import StateUpdater
-  
+
   def start(_type, _args) do
+    {:ok, _} = :pg.start_link()
     FirefliesFestival.main()
     Supervisor.start_link([], strategy: :one_for_one)
   end
@@ -67,6 +68,9 @@ defmodule FirefliesFestival do
 
 
   defp create_firefly(%Firefly{} = f) do
+    :pg.join(:firefly_on_state_ping_topic, self())
+    :pg.join(:printer_get_fireflies_state_topic, self())
+
     new = System.monotonic_time(:millisecond)
     run_firefly(f, new+f.ut)
   end
@@ -74,10 +78,9 @@ defmodule FirefliesFestival do
 
   # one process handling one firefly
   defp run_firefly(%Firefly{} = f, next_clock_time) do
-
     current_time = System.monotonic_time(:millisecond)
     remaining_time = max(next_clock_time - current_time, 0)
-
+    # IO.inspect(f)
     receive do
       # from other fireflies
       {:on_state, from_id} ->
@@ -93,9 +96,11 @@ defmodule FirefliesFestival do
 
       # from printer
       {:get_state} ->
-        for pid <- :pg.get_members(:printer_get_fireflies_state_topic) do
+        # IO.puts("asked status")
+        for pid <- :pg.get_members(:printer_recieve_fireflies_state_topic) do
           if pid != self() do
-            send(pid, {:on_state, f.id, f.state})
+            # IO.puts("sending to ")
+            send(pid, {:get_state, f.id, f.state})
           end
         end
         run_firefly(f, next_clock_time)

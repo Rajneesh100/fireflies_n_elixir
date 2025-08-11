@@ -1,3 +1,3 @@
 defmodule Firefly do
-  defstruct [:id, :state, :clock, :soft, :sont, :sdt, :pid, :ut]
+  defstruct [:id, :state, :clock, :soft, :sont, :sdt, :pid, :ut, :num]
 end

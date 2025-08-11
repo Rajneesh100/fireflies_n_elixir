@@ -15,15 +15,16 @@ defmodule Display do
 
     ask_fireflies_state()
     status_map = printer_listner(pf)
+    # IO.inspect(status_map)
     line_state =
       for id <- 1..map_size(status_map) do
         case Map.get(status_map, id) do
           1 -> "B"
-          0 -> "K"
+          _ -> " "
         end
       end
 
-    IO.puts(Enum.join(line_state))
+    IO.write(Enum.join(line_state))
     fetch_and_print(pf)
 
   end
@@ -47,6 +48,9 @@ defmodule Display do
       receive do
         # from fireflies
         {:get_state, firefly_id, state} ->
+          # IO.puts("got value")
+          # IO.inspect(firefly_id)
+          # IO.inspect(state)
           updated_states = Map.put(states, firefly_id, state)
           collect_states(updated_states, deadline)
 
