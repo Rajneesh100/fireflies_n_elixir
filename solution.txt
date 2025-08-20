@@ -26,20 +26,23 @@ sont =  1000*ont / ut
 sdt  =  1000*dt / ut
 
 
+before spawing fireflies we will spawn printer and broadcaster and pass it pid to fireflies
+so each fire fly know about existance of a printer( which queries them for their state)
+and broadcaster (which tells them some fly has just turned on)
+
 for n fireflies we will spawn n process each process will have following things:
 
     id         : int value starting from 1 to n
     clock      : it's basically a counter which increments value by 1 after each ut interval
     state      : 0 or 1  (zero means off 1 means on)
-    listen     : each process should be listning {:on_state, firefly_id} and should call modify_clock method after listing any message.
-    broadcasts : when a firefly changes it's state to on state clock is reset to 0  so when t=0 and state =1 it boradcasts {:on_state, self.id} to all other fireflies.
         -- and same above parameter values --
-    ut
-    soft
-    sont
-    sdt 
-    ut
-    pid
+    ut             : unit time in miliseconds
+    soft           : off time (int multiple of ut)
+    sont           : on time (int multiple of ut)
+    sdt            : delta (int multiple of ut) which can be skipped
+    pid            : self()   process id
+    printer_id     : when a fly created it will have this printer_id as parameter and pinter can ping fly on {:get_state} and when fly is created we send a ping to printer in this way printer can store the list of all flies which helps it to query state of every fly
+    broadcaster_id : all fly will have pid of this broadcaster, simialr to printer it will maintain a list of flies which will help it broadcast to all flies. and flies can ping broadcaster to notify other fly about his on state.
 
 
 intial condition :
@@ -73,7 +76,11 @@ tick:
 
 
 broadcast:
-  use ets memory to get all fireflies pid and ping them
+  it is process which collects the pids of all flies during creation and help flies to send pings to other flies without knowing each other
+
+printer :
+    it is process which collects the pids of all flies during creation and query flies at a regular interval for printing state on terminal
+
 
 run_firefly
   listner : 
@@ -106,7 +113,7 @@ let's say value of clock just changes to 2 and from it's left neighbour a ping c
 let's say 3 unit of time so now it's at 6 unit but since he already spend 2 ms in current wait so he needed to wait 98 ms to complete the normal cycle but now he will go to next cycle which is not in perfect 100ms slot are you getting me ?
 
 normal :
-200ms    300ms   400ms 500ms 600ms
+200ms    300ms   400ms   500ms 600ms
 tick     tick    tick    tick    tick
 
 when ping :

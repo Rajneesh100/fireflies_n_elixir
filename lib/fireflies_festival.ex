@@ -1,16 +1,16 @@
 defmodule FirefliesFestival do
   use Application
   import ClockManager
-  import Display
+  import Printer
   import Config
   import StanderdConfig
   import SkipWaitTriggered
   import StateUpdater
+  import Broadcast
 
   def start(_type, _args) do
-    {:ok, _} = :pg.start_link()
     FirefliesFestival.main()
-    Supervisor.start_link([], strategy: :one_for_one)
+    {:ok, self()}  # Just return success
   end
 
 
@@ -37,39 +37,49 @@ defmodule FirefliesFestival do
 
   def main do
 
-    config = %Config{tf: 10, num: 50, ont: 0.5, oft: 1, dt: 0.5, pf: 30}
+    #start the printer process it will store all the pids of firefly insted of using pub sub  and send pings to all of them
+
+    config = %Config{tf: 10, num: 80, ont: 0.5, oft: 2, dt: 1, pf: 30}
     sc = getStanderdConfig(config)
 
+    # each fly will have these two thing to communicate with outer world
+    printer_id = spawn_link(fn -> display_fireflies(sc.pf, sc.num , sc.ut) end)
+    broadcaster_id = spawn_link(fn -> broadcast_state_manager(sc.num, sc.ut) end)
 
-    max_random_time = config.tf * 2   #initial clock time in terms of ut [ 0 to 2*tick_freq ]
 
-    # creating one process per firefly
-    fireflies =
-      for id <- 1..sc.num do
-        initial_clock = :rand.uniform(max_random_time) # random float values
-        spawn_link(fn ->
-          create_firefly(%Firefly{
-            id: id,
-            clock: initial_clock,
-            state: 0,
-            soft: sc.soft,
-            sont: sc.sont,
-            sdt: sc.sdt,
-            pid: self(),
-            ut: sc.ut
-          })
-        end)
-      end
 
-    IO.inspect(fireflies, limit: :infinity)
-    spawn_link(fn -> display_fireflies(sc.pf) end)
+    max_random_time = config.tf * 2   #initial clock time in terms of ut [ 0 to 2*tick_freq ut ]
+
+    # one process per firefly
+    for id <- 1..sc.num do
+      initial_clock = :rand.uniform(max_random_time) # random float values
+      new_firefly_id = spawn_link(fn ->
+        create_firefly(%Firefly{
+          id: id,
+          clock: initial_clock,
+          state: 0,
+          soft: sc.soft,
+          sont: sc.sont,
+          sdt: sc.sdt,
+          pid: self(),
+          ut: sc.ut,
+          printer_id: printer_id,
+          broadcaster_id: broadcaster_id
+        })
+      end)
+      # IO.puts("neww firefly #{id} with PID #{inspect(new_firefly_id)}")
+      # send it to broadcaster and printer so that they can maintain a list of fireflies & can ping all fireflies and but firefly remains isolated from each other
+      send(printer_id, {:newly_created_firefly, new_firefly_id})
+      send(broadcaster_id, {:newly_created_firefly, new_firefly_id})
+    end
+
+
+
 
   end
 
 
   defp create_firefly(%Firefly{} = f) do
-    :pg.join(:firefly_on_state_ping_topic, self())
-    :pg.join(:printer_get_fireflies_state_topic, self())
 
     new = System.monotonic_time(:millisecond)
     run_firefly(f, new+f.ut)
@@ -80,9 +90,11 @@ defmodule FirefliesFestival do
   defp run_firefly(%Firefly{} = f, next_clock_time) do
     current_time = System.monotonic_time(:millisecond)
     remaining_time = max(next_clock_time - current_time, 0)
+
+
     # IO.inspect(f)
     receive do
-      # from other fireflies
+      # from other fireflies via printer
       {:on_state, from_id} ->
         if f.state == 0 and skip_wait_triggered?(f.id, from_id, f.num) do
           new_clock = f.clock + f.sdt
@@ -94,24 +106,20 @@ defmodule FirefliesFestival do
         end
 
 
-      # from printer
+
+      # state query from printer
       {:get_state} ->
-        # IO.puts("asked status")
-        for pid <- :pg.get_members(:printer_recieve_fireflies_state_topic) do
-          if pid != self() do
-            # IO.puts("sending to ")
-            send(pid, {:get_state, f.id, f.state})
-          end
-        end
+        send(f.printer_id, {:get_state, f.id, f.state})
         run_firefly(f, next_clock_time)
 
 
-      # after one tick time,
+
+      # clock update after one tick time,
       after
         remaining_time ->
           f = tick_clock(f)        # clock++
           now = System.monotonic_time(:millisecond)
-          run_firefly(f, f.ut+now) # for cycle time
+          run_firefly(f, f.ut+now) # for next cycle time
     end
 
   end

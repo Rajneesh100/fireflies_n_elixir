@@ -1,11 +1,10 @@
 defmodule StateUpdater do
-  import Broadcast
 
   def update_state(%Firefly{} = f) do
     cond do
       # 0 -> 1
       f.state == 0 and f.clock >= f.soft ->
-        send_on_state_to_fireflies(f.id)
+        send(f.broadcaster_id, {:on_state, f.pid,  f.id})  # send a ping to broadcaster and it will ping all fles
         %{f | clock: 0, state: 1}
 
       #  1 -> 0
