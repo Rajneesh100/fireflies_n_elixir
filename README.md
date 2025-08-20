@@ -97,13 +97,11 @@ clock\_manager :
 
 broadcaster process:
 ```
-  collect_fireflies_pids method only runs at the start of process and for one unit time, it will have all it's fireflies pids and then it starts the broadcating services which can be used state changing fireflies.
-  it is process which intially collects the pids of all flies during creation. after that help flies to send pings to other flies without knowing each other, each fly have this broadcaster_pid to intract with other flies via broadcaster
+collect_fireflies_pids runs once at process start to gather all fireflies pids (this process lasts only 1 unit time ), after which the process launches broadcasting services where each fly uses its broadcaster_pid to ping and interact with other flies without direct knowledge of them.
 ```
 printer process:
 ```
-    collect_fireflies_pids method only runs at the start of process and for one unit time, it will have all it's fireflies pids and then it starts the printing process
-    it is process which intially collects the pids of all flies during creation. after this is query every fly at a regular interval for printing state on terminal, each fly have this printer_pid
+collect_fireflies_pids runs once at process start to gather all fireflies pids (this process lasts only 1 unit time ), after which the process periodically queries each fly to print state on the terminal.
 ```
 
 
@@ -124,31 +122,6 @@ just after state change execution at clock = 0, broadcasts will be done to all o
 
 ---
 
-**EDGE cases** :
-so let's say unit time is 100ms so if nothing happens then after 100ms tick will trigger and increment the counter, well and good.
-
-now consider this:
-let's say value of clock just changes to 2 and from its left neighbour a ping came after 2 ms so it adds, let's say, 3 units of time so now it's at 5 units but since it already spent 2 ms in the current wait, it needed to wait 98 ms to complete the normal cycle but now it will go to the next cycle which is not in a perfect 100ms slot so that 2ms wait was not counted properly.
-so implemented global shared clock for each firefly using ets storage and clock\_update and listener were independently updating clocks without losing any time.
-to avoid race condition during clock\_update at new tick by clock\_manager and listener process, I have simply added 1ms wait time on listener which avoids race issues with normal clock\_update. Could have done something like mutex & semaphore to avoid this critical section problem but wanted to keep it simple and the current hack will have no consequences in terms of correctness.
-
-```
-normal :
-200ms                                          300ms   400ms   500ms   600ms
-tick                                           tick    tick    tick    tick
-
-when ping :
-200ms   202ms (ping)     502ms  -98ms later->  600ms  700ms ......
-tick    jump             tick                  tick    tick
-```
-
-separated the clock\_update and skip\_wait logic as an independent flow and clock\_update will get precedence.
-to maintain time slip by different clocks, now all of the regular clocks will tick at the same time.
-
-implemented shared memory space for state and clock access using ets.
-
----
-
 # how I have used LLMs
 
 first of all I have used LLMs for understanding the use case of Elixir, like why it was created in the first place, and then thought about a solution and from my background with backend development I thought like for each firefly what things I need:
@@ -161,11 +134,8 @@ first of all I have used LLMs for understanding the use case of Elixir, like why
 now i had this minimal requiremnet that i needed to figur out, mostly the inter process message passing part.
 so I explored about implementing listener and broadcaster logic. I found one YouTube video with help of GPT in which I got to know about inter-process communication, it was in context of a parallel cart management service which felt similar to what i needed. the video: ([link](https://www.youtube.com/watch?v=J2F9z_0XFj4)). I watched a few other short videos around it, to get together with syntax. I went to GPT for like instead of sending messages directly manually through Elixir interactive session, how to do it in code level. A few times I used GPT to understand the syntax meaning like what does this one\_on\_one here
 
-```elixir
-Supervisor.start_link([], strategy: :one_for_one)
-```
-mean here (start the crashed process only, let it fail alone concept instead of affecting the entire system, contain the failure).
-So yeah, I used LLMs for syntax understanding and finding key resources to learn & impliment my ideas in simplest way possible.
+
+
 
 ---
 
@@ -205,3 +175,32 @@ elixir -v
 mix run --no-halt
 
 ```
+
+
+
+---
+
+**EDGE cases** :
+so let's say unit time is 100ms so if nothing happens then after 100ms tick will trigger and increment the counter, well and good.
+
+now consider this:
+let's say value of clock just changes to 2 and from its left neighbour a ping came after 2 ms so it adds, let's say, 3 units of time so now it's at 5 units but since it already spent 2 ms in the current wait, it needed to wait 98 ms to complete the normal cycle but now it will go to the next cycle which is not in a perfect 100ms slot so that 2ms wait was not counted properly.
+so implemented global shared clock for each firefly using ets storage and clock\_update and listener were independently updating clocks without losing any time.
+to avoid race condition during clock\_update at new tick by clock\_manager and listener process, I have simply added 1ms wait time on listener which avoids race issues with normal clock\_update. Could have done something like mutex & semaphore to avoid this critical section problem but wanted to keep it simple and the current hack will have no consequences in terms of correctness.
+
+```
+normal :
+200ms                                          300ms   400ms   500ms   600ms
+tick                                           tick    tick    tick    tick
+
+when ping :
+200ms   202ms (ping)     502ms  -98ms later->  600ms  700ms ......
+tick    jump             tick                  tick    tick
+```
+
+separated the clock\_update and skip\_wait logic as an independent flow and clock\_update will get precedence.
+to maintain time slip by different clocks, now all of the regular clocks will tick at the same time.
+
+implemented shared memory space for state and clock access using ets.
+
+---
