@@ -35,21 +35,26 @@ sont =  1000*ont / ut
 sdt  =  1000*dt / ut
 ```
 
-for n fireflies we will spawn n processes, each process will have the following things:
 
+before spawing fireflies we will spawn printer and broadcaster and pass it pid to fireflies
+so each fire fly know about existance of a printer( which queries them for their state)
+and broadcaster (which tells them some fly has just turned on)
 ```
+for n fireflies we will spawn n process each process will have following things:
+
     id         : int value starting from 1 to n
     clock      : it's basically a counter which increments value by 1 after each ut interval
-    state      : 0 or 1  (zero means off, 1 means on)
-    listen     : each firefly should be listening {:on_state, firefly_id} and should modify the clock time after listening to any message.
-    broadcasts : when a firefly changes its state to on, its clock is reset to 0 so at t=0 and state = 1 it broadcasts {:on_state, self.id} to all other fireflies.
+    state      : 0 or 1  (zero means off 1 means on)
         -- and same above parameter values --
-    ut
-    soft
-    sont
-    sdt 
-    ut
-    pid
+    ut             : unit time in miliseconds
+    soft           : off time (int multiple of ut)
+    sont           : on time (int multiple of ut)
+    sdt            : delta (int multiple of ut) which can be skipped
+    pid            : self()   process id
+    printer_id     : when a fly created it will have this printer_id as parameter and pinter can ping fly on {:get_state} and when fly is created we send a ping to printer in this way printer can store the list of all flies which helps it to query state of every fly
+    broadcaster_id : all fly will have pid of this broadcaster, simialr to printer it will maintain a list of flies which will help it broadcast to all flies. and flies can ping broadcaster to notify other fly about his on state.
+
+
 ```
 
 initial condition :
@@ -90,11 +95,17 @@ clock\_manager :
   just add one to clock
 ```
 
-broadcast:
+broadcaster process:
+```
+  collect_fireflies_pids method only runs at the start of process and for one unit time, it will have all it's fireflies pids and then it starts the broadcating services which can be used state changing fireflies.
+  it is process which intially collects the pids of all flies during creation. after that help flies to send pings to other flies without knowing each other, each fly have this broadcaster_pid to intract with other flies via broadcaster
+```
+printer process:
+```
+    collect_fireflies_pids method only runs at the start of process and for one unit time, it will have all it's fireflies pids and then it starts the printing process
+    it is process which intially collects the pids of all flies during creation. after this is query every fly at a regular interval for printing state on terminal, each fly have this printer_pid
+```
 
-```
-  use ets memory to get all fireflies' pids and ping them
-```
 
 run\_firefly:
 
@@ -190,5 +201,7 @@ sudo apt-get install -y curl wget gnupg
 sudo apt-get install -y elixir erlang
 
 elixir -v
+
+mix run --no-halt
 
 ```

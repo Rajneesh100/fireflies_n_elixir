@@ -9,8 +9,8 @@ defmodule FirefliesFestival do
   import Broadcast
 
   def start(_type, _args) do
-    FirefliesFestival.main()
-    {:ok, self()}  # Just return success
+    FirefliesFestival.main() # run infinitly
+    {:ok, self()}
   end
 
 
@@ -37,7 +37,7 @@ defmodule FirefliesFestival do
 
   def main do
 
-    #start the printer process it will store all the pids of firefly insted of using pub sub  and send pings to all of them
+    #start the printer & broadcaster process it will store all the pids of firefly insted of using pub sub and it will send pings to all of them
 
     config = %Config{tf: 10, num: 80, ont: 0.5, oft: 2, dt: 1, pf: 30}
     sc = getStanderdConfig(config)
