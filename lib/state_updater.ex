@@ -5,10 +5,12 @@ defmodule StateUpdater do
       # 0 -> 1
       f.state == 0 and f.clock >= f.soft ->
         send(f.broadcaster_id, {:on_state, f.pid,  f.id})  # send a ping to broadcaster and it will ping all fles
+        send(f.printer_id, {:get_state, f.id, 1})
         %{f | clock: 0, state: 1}
 
       #  1 -> 0
       f.state == 1 and f.clock >= f.sont ->
+        send(f.printer_id, {:get_state, f.id, 0})
         %{f | clock: 0, state: 0}
 
       # no switch required

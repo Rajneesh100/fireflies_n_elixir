@@ -39,7 +39,7 @@ defmodule FirefliesFestival do
 
     #start the printer & broadcaster process it will store all the pids of firefly insted of using pub sub and it will send pings to all of them
 
-    config = %Config{tf: 10, num: 80, ont: 0.5, oft: 2, dt: 1, pf: 30}
+    config = %Config{tf: 10, num: 50, ont: 0.5, oft: 2, dt: 2, pf: 30}
     sc = getStanderdConfig(config)
 
     # each fly will have these two thing to communicate with outer world
@@ -52,7 +52,8 @@ defmodule FirefliesFestival do
 
     # one process per firefly
     for id <- 1..sc.num do
-      initial_clock = :rand.uniform(max_random_time) # random float values
+      initial_clock = :rand.uniform(max_random_time)
+
       new_firefly_id = spawn_link(fn ->
         create_firefly(%Firefly{
           id: id,
@@ -94,7 +95,15 @@ defmodule FirefliesFestival do
 
     # IO.inspect(f)
     receive do
-      # from other fireflies via printer
+
+      # self message
+      {:update_clock} ->
+        f = tick_clock(f)
+        now = System.monotonic_time(:millisecond)
+        run_firefly(f, next_clock_time)
+
+
+      # from broadcaster from other flies
       {:on_state, from_id} ->
         if f.state == 0 and skip_wait_triggered?(f.id, from_id, f.num) do
           new_clock = f.clock + f.sdt
@@ -102,27 +111,32 @@ defmodule FirefliesFestival do
           f = update_state(f)
           run_firefly(f, next_clock_time)
         else
-          run_firefly(f, next_clock_time)
+          run_firefly(f, next_clock_time) # xhange tim
         end
-
-
-
-      # state query from printer
-      {:get_state} ->
-        send(f.printer_id, {:get_state, f.id, f.state})
-        run_firefly(f, next_clock_time)
-
 
 
       # clock update after one tick time,
       after
         remaining_time ->
-          f = tick_clock(f)        # clock++
+          send(self(), {:update_clock})
           now = System.monotonic_time(:millisecond)
-          run_firefly(f, f.ut+now) # for next cycle time
+          run_firefly(f, now+f.ut)
     end
 
   end
+
+  # defp shuffle(list , id ) do
+
+  #   if id == enum,count(list)
+  #   list
+  #   updated_list = list
+  #     rvr = Enum.count(updated_list) - id +1;
+  #     new_idx  = trunc(:rand.uniform(rvr)),
+  #     # list = {list | }
+  #   updated_list = swap(updated_list, rvr, new_idx)
+  #   shuffle(list, id+1)
+  # end
+
 
 
 end

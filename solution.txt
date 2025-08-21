@@ -126,3 +126,31 @@ sapreated the clock_update and skip_wait logic as a indepenent flow and clock_up
 to maintain to avoid time slip by different clocks now all of the regular clocks will tick at the same time
 
 
+
+
+
+
+
+two process
+ 
+ create fire fly 
+  cid 
+  lid 
+
+  listner 
+    : clock_tick
+    : printer_get_state
+    : on_state. 
+  
+  clock will have listner_id
+    : 
+   
+  
+
+
+ clock.             listner    t
+            ->                1
+                              2
+                              3
+                              4
+                              5    
