@@ -93,7 +93,7 @@ clock\_manager :
 broadcast:
 
 ```
-  use ets memory to get all fireflies' pids and ping them
+  push based updates, when ever fireflies change state it ping the printer process which is always listning and updates it state array for that fireflies untill next time
 ```
 
 run\_firefly:
