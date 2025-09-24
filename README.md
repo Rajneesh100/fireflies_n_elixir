@@ -134,27 +134,6 @@ tick    jump             tick                  tick    tick
 separated the clock\_update and skip\_wait logic as an independent flow and clock\_update will get precedence.
 to maintain time slip by different clocks, now all of the regular clocks will tick at the same time.
 
-implemented shared memory space for state and clock access using ets.
-
----
-
-# how I have used LLMs
-
-first of all I have used LLMs for understanding the use case of Elixir, like why it was created in the first place, and then thought about a solution and from my background with backend development I thought like for each firefly what things I need:
-
-1. an internal counter
-2. a listener (something like message queues but on inter-process level)
-3. a broadcaster (publishes to all the fireflies in the system through some thread id)
-4. clock & state manipulation logic
-
-now i had this minimal requiremnet that i needed to figur out, mostly the inter process message passing part.
-so I explored about implementing listener and broadcaster logic. I found one YouTube video with help of GPT in which I got to know about inter-process communication, it was in context of a parallel cart management service which felt similar to what i needed. the video: ([link](https://www.youtube.com/watch?v=J2F9z_0XFj4)). I watched a few other short videos around it, to get together with syntax. I went to GPT for like instead of sending messages directly manually through Elixir interactive session, how to do it in code level. A few times I used GPT to understand the syntax meaning like what does this one\_on\_one here
-
-```elixir
-Supervisor.start_link([], strategy: :one_for_one)
-```
-mean here (start the crashed process only, let it fail alone concept instead of affecting the entire system, contain the failure).
-So yeah, I used LLMs for syntax understanding and finding key resources to learn & impliment my ideas in simplest way possible.
 
 ---
 
